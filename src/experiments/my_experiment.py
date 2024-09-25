@@ -8,12 +8,11 @@ class MyExp:
     def __init__(self):
         self.mlflow_id = 0
 
-    def setup(self, proj_name, debug:bool):
+    def setup(self, proj_name, username, mlflow_pass, debug:bool):
         # MLFlow setup
-        mlflow.start_run(experiment_id=self.mlflow_id, 
-                         run_name='debug' if not debug else None)
-        mlflow_username = hydra.core.hydra_config.HydraConfig.get().job.env_set.MLFLOW_TRACKING_USERNAME
-        dagshub.init(proj_name, mlflow_username, mlflow=True)
+        dagshub.init(proj_name, username, mlflow=not debug)
+        mlflow.environment_variables.MLFLOW_TRACKING_PASSWORD = mlflow_pass
+        mlflow.start_run(experiment_id=self.mlflow_id)
 
     def end_run(self, seed:int):
         mlflow.log_param('seed', seed)
@@ -21,5 +20,5 @@ class MyExp:
 
     def run_experiment(self, cfg):
         logging.info(f"Running with seed: {cfg.seed}")
-        self.setup(cfg.proj_name, cfg.debug)
+        self.setup(cfg.proj_name, cfg.username, cfg.mlflow_pass, cfg.debug)
         self.end_run(cfg.seed)

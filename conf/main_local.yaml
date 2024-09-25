@@ -1,24 +1,22 @@
 _target_: main.Main
 
 proj_name: hydra_template
+username: your_username
+mlflow_pass: your_pass
 
 defaults:
   # Main
   - _self_
   - exp: myexp
-  - mlflow_password
 
 seed: 47
-debug: true
+debug: false
 
 ## Output dir
 hydra:
   run:
-    dir: data/outputs/${exp._target_}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: data/${proj_name}_outputs/${exp._target_}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
-    dir: data/multirun/${exp._target_}/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  job:
-    env_set:
-      MLFLOW_TRACKING_URI: my_uri
-      MLFLOW_TRACKING_USERNAME: my_username
+    dir: data/${proj_name}_multirun/${exp._target_}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job: # squeue
     name: ${proj_name}_${exp._target_}

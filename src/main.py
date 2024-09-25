@@ -8,6 +8,8 @@ from hydra.utils import instantiate
 @dataclass
 class Main:
     proj_name: str
+    username: str
+    mlflow_pass: str
     seed: int
     debug: bool
     exp: object
