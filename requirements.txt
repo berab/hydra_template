@@ -2,3 +2,4 @@ hydra-core==1.3.0
 hydra-submitit-launcher
 mlflow==2.14.0
 dagshub==0.3.28
+pathlib==1.0.1
