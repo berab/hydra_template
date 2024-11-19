@@ -3,7 +3,6 @@ import hydra
 from omegaconf import DictConfig
 from dataclasses import dataclass
 from hydra.utils import instantiate
-# from experiments import run_fff_training, run_ae_training, run_fff_ae_training
 
 @dataclass
 class Main:
