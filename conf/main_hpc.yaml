@@ -2,6 +2,7 @@ _target_: main.Main
 
 defaults:
   - main_local
+  - override hydra/launcher: submitit_slurm
 
 ## Output dir
 hydra:
