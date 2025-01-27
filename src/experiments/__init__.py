@@ -1,1 +1,1 @@
-from .my_experiment import MyExp
+from .training import Training
