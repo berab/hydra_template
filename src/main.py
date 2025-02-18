@@ -15,10 +15,16 @@ class Main:
 
 @hydra.main(config_path="../conf/", config_name="main", version_base='1.2')
 def main(cfg: DictConfig):
-    # Init RNGs
+    # Init RNG_level s
     random.seed(cfg.seed)
     cfg = instantiate(cfg)
-    cfg.exp.run_experiment(cfg)
+
+    # Run experiment
+    if cfg.debug > 0:
+        os.environ["HYDRA_FULL_ERROR"] = "1" # In debug mode
+        cfg.exp.run(cfg)
+    else:
+        cfg.exp.main(cfg)
 
 if __name__ == "__main__":
     main()
