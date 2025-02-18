@@ -19,6 +19,9 @@ class MyExp:
         # MLFlow setup
         self.out_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
         self.log_filename = hydra.core.hydra_config.HydraConfig.get().job.name+'.log'
+
+        os.environ["_MLFLOW_HTTP_REQUEST_MAX_RETRIES_LIMIT"] = "1001"
+        os.environ["MLFLOW_HTTP_REQUEST_MAX_RETRIES"] = "1000"
         dagshub.init(proj_name, username, mlflow=not debug)
         mlflow.environment_variables.MLFLOW_TRACKING_PASSWORD = mlflow_pass
         mlflow.start_run(experiment_id=self.mlflow_id)
