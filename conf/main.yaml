@@ -1,0 +1,23 @@
+_target_: main.Main
+
+proj_name: hydra_template
+
+defaults:
+  # Main
+  - _self_
+  - exp: myexp
+  - my_mlflow
+  # - pbs
+  # - slurm
+
+seed: 47
+debug: false
+
+## Output dir
+hydra:
+  run:
+    dir: data/${proj_name}_outputs/${exp._target_}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: data/${proj_name}_multirun/${exp._target_}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job: # squeue
+    name: ${proj_name}_${exp._target_}

@@ -1,7 +1,6 @@
 __pycache__
 data
 *env
-conf/main.yaml
 *swp
 *swo
 mlruns
