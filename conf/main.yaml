@@ -12,7 +12,7 @@ defaults:
 
 seed: 47
 debug: false
-
+ 
 ## Output dir
 hydra:
   run:

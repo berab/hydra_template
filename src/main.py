@@ -1,3 +1,4 @@
+import os
 import random
 import hydra
 from omegaconf import DictConfig
@@ -7,11 +8,10 @@ from hydra.utils import instantiate
 @dataclass
 class Main:
     proj_name: str
-    username: str
-    mlflow_pass: str
     seed: int
     debug: bool
     exp: object
+    mlflow: object
 
 @hydra.main(config_path="../conf/", config_name="main", version_base='1.2')
 def main(cfg: DictConfig):
