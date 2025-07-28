@@ -1,0 +1,16 @@
+_target_: utils.mlflow.MLFlow
+server: local # local or dagshub
+username: berab
+token: 5caf0258548d586452a73543b1f29844fcf78d81
+exp: exp_name
+
+env:
+  vars: 
+    - MLFLOW_TRACKING_URI
+    - _MLFLOW_HTTP_REQUEST_MAX_RETRIES_LIMIT
+    - MLFLOW_HTTP_REQUEST_MAX_RETRIES
+  vals:
+    - file:data/mlruns
+    - 1001
+    - 1000
+ 

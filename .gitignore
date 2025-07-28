@@ -1,8 +1,7 @@
 __pycache__
 data
 *env
-conf/main.yaml
 *swp
 *swo
 mlruns
-mlflow.yaml
+my_mlflow.yaml
