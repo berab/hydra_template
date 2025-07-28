@@ -1,15 +1,10 @@
-import hydra
-import mlflow
 import logging
-from pathlib import Path
-from utils.mlflow import MLFlow
+from .base import BaseExp 
 
-class MyExp:
+class MyExp(BaseExp):
     def __init__(self):
+        super().__init__()  # Initialize BaseExp
         self.exp_name = "MyExp"
-        self.out_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
-        self.log_filename = hydra.core.hydra_config.HydraConfig.get().job.name+'.log'
-        self.overrides_config = self.out_dir/'.hydra/overrides.yaml'
 
     def get_config(self):
         return {
@@ -21,43 +16,11 @@ class MyExp:
         # MLFlow setup
         mconf.start(proj_name, run_name=None)
 
-    def end_run(self, seed: int):
-        mlflow.log_param('success', True)
-        mlflow.log_param('seed', seed)
-        mlflow.log_params(self.get_config())
-        mlflow.log_artifact(self.out_dir/self.log_filename)
-
-        run = mlflow.active_run()
-        mlflow.end_run()
-        finished_run = mlflow.get_run(run.info.run_id)
-        logging.info(f"MLFlow run ID: {finished_run.info.run_id}, "
-                     f"status: {finished_run.info.status}")
-
-    def end_failed_run(self, error, seed: int):
-        logging.info("Failed!")
-        logging.info(error)
-        mlflow.log_param('success', False)
-
-        mlflow.log_param('seed', seed)
-        mlflow.log_artifact(self.out_dir/self.log_filename)
-        mlflow.log_artifact(self.overrides_config)
-
-        run = mlflow.active_run()
-        mlflow.end_run()
-        finished_run = mlflow.get_run(run.info.run_id)
-        logging.info(f"MLFlow run ID: {finished_run.info.run_id}, "
-                     f"status: {finished_run.info.status}")
+    def run_exp(self, cfg):
+        pass
 
     def run(self, cfg):
         logging.info(f"Running {self.exp_name} with seed: {cfg.seed}")
         self.setup(cfg.mlflow, cfg.proj_name, run_name=None)
+        self.run_exp(cfg)
         self.end_run(cfg.seed)
-
-    def main_error(self, cfg):
-        try: 
-            self.run(cfg)
-        except Exception as e:
-            self.end_failed_run(e, cfg.seed)
-
-    def main(self, cfg):
-        self.run(cfg)
