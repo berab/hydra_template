@@ -6,13 +6,13 @@ defaults:
   # Main
   - _self_
   - exp: myexp
-  - my_mlflow
+  - mlflow: my_mlflow
   # - pbs
   # - slurm
 
 seed: 47
 debug: false
- 
+
 ## Output dir
 hydra:
   run:
@@ -21,3 +21,7 @@ hydra:
     dir: data/${proj_name}_multirun/${exp._target_}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   job: # squeue
     name: ${proj_name}_${exp._target_}
+  callbacks:
+    mlflow_to_csv:
+      _target_: main.MLFlowToCSV
+      exp: ${mlflow.exp}

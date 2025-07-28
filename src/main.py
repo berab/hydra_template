@@ -1,9 +1,24 @@
 import os
 import random
 import hydra
+import mlflow
 from omegaconf import DictConfig
 from dataclasses import dataclass
 from hydra.utils import instantiate
+from hydra.experimental.callback import Callback
+from typing import Any
+
+class MLFlowToCSV(Callback):
+    def __init__(self, exp):
+        self.exp = exp
+
+    def on_multirun_end(self, config: DictConfig, **kwargs: Any):
+        mlflow.set_tracking_uri("file:data/mlruns")
+        experiment = mlflow.get_experiment_by_name(self.exp)
+
+        runs_df = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
+        os.makedirs("data/csv_files", exist_ok=True)
+        runs_df.to_csv(f"data/csv_files/{self.exp}.csv", index=False)
 
 @dataclass
 class Main:
