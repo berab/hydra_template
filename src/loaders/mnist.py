@@ -1,29 +1,34 @@
+from pathlib import Path
 import torch
 from torchvision.datasets import MNIST
 import torchvision.transforms as transforms
-from torch.utils.data import Subset, DataLoader
+from torch.utils.data import Subset, DataLoader, TensorDataset
+
+DATA_DIR = "data/MNIST"
+SETS = ["train", "valid", "test"]
 
 class MNISTLoader:
-    def __init__(self, batch_size: int, normalize, debug_level: bool):
-        self.name = 'mnist'
-        self.debug_level = debug_level
+    def __init__(self, batch_size: int, num_workers: int, normalize):
+        self.name = 'MNIST'
+        self.data_dir = Path(DATA_DIR)
         transform = transforms.Compose([transforms.ToTensor(), normalize])
 
-        whole_tset = MNISTSubset(train=True, transform=transform, debug_level=self.debug_level)
-        testset = MNISTSubset(train=False, transform=transform, debug_level=0)
+        whole_tset = MNIST(root=self.data_dir.parent, train=True, download=True,
+                                 transform=transform)
+        testset = MNIST(root=self.data_dir.parent, train=False, download=True, 
+                        transform=transform)
 
-        whole_range = torch.randperm(len(whole_tset))
+        perm = torch.randperm(len(whole_tset))
+        val_len = int(len(perm)*0.1) # 10% for validation
+        trainset = Subset(whole_tset, perm[val_len:].tolist())
+        validset = Subset(whole_tset, perm[:val_len].tolist())
 
-        val_len = int(len(whole_range)*0.1)
-        train_len = len(whole_range)-val_len
-
-        trainset = Subset(whole_tset, whole_range[:train_len])
-        validset = Subset(whole_tset, whole_range[val_len:])
-
-        num_workers = 0 if not (self.debug_level == 3) else 8
-        self.train = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-        self.valid = DataLoader(validset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-        self.test = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+        self.train = DataLoader(trainset, batch_size=batch_size, shuffle=True, 
+                                num_workers=num_workers)
+        self.valid = DataLoader(validset, batch_size=batch_size, shuffle=False, 
+                                num_workers=num_workers)
+        self.test = DataLoader(testset, batch_size=batch_size, shuffle=False, 
+                               num_workers=num_workers)
 
         self.batch_size = batch_size
 
@@ -31,14 +36,22 @@ class MNISTLoader:
         self.in_size = (28, 28)
         self.out_dim = 10
 
-class MNISTSubset(MNIST):
-    def __init__(self, train: bool, transform, debug_level: bool):
-        super().__init__(root='./data', train=train, download=True, transform=transform)
-        self.debug_level = debug_level
+    def get_tensors(self, sets):
+        for i, dset in enumerate(SETS):
+            images, labels = [], []
+            for img, label in sets[i]:
+                images.append(img)
+                labels.append(torch.tensor(label))
+            torch.save(torch.stack(images), self.data_dir/f"{dset}_tensors.pt") 
+            torch.save(torch.stack(labels), self.data_dir/f"{dset}_labels.pt")
 
-    def __len__(self):
-        if self.debug_level == 3:
-            return 2
-        elif self.debug_level == 2:
-            return 10000
-        return len(self.data)
+    def get_config(self):
+        return {
+                "task": self.name,
+                "in_chan": self.in_chan,
+                "in_size": self.in_size,
+                "out_dim": self.out_dim,
+                "train_samples": len(self.train.dataset),
+                "valid_samples": len(self.valid.dataset),
+                "test_samples": len(self.test.dataset),
+                }
