@@ -10,6 +10,7 @@ defaults:
   - model: fff
   - loader: mnist
   - optim: adam
+  - sched: default
   # - pbs
   # - slurm
 
@@ -18,7 +19,7 @@ epochs: 50
 
 device: 
   _target_: torch.device
-  type: cuda 
+  type: cpu 
   index: 0
 
 ## Output dir

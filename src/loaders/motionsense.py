@@ -76,6 +76,7 @@ class MSLoader:
         self.test = DataLoader(tests, batch_size=batch_size, shuffle=False, 
                                num_workers=num_workers)
 
+        self.batch_size = batch_size
         self.sample_rate = 50  # Hz
         self.n_datapoints = 12
 

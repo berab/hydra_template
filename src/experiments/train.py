@@ -1,11 +1,11 @@
 import logging
 
-from .base import BaseExp 
+from .base import BaseTrainExp 
 
 from utils.nn import train_epoch, eval_model
 
 
-class Train(BaseExp):
+class Train(BaseTrainExp):
     def __init__(self):
         super().__init__()  # Initialize BaseExp
         self.exp_name = "Train"
@@ -18,13 +18,13 @@ class Train(BaseExp):
         self.log_metrics(metrics)
         self.log_model()
 
-    def run_exp(self, epochs: int) -> dict:
+    def run_exp(self) -> dict:
         # Metrics init.
         metrics = {'train_acc': [], 'train_loss': [],
                    'val_acc': [], 'val_loss': [],
                    }
         # Training
-        for epoch in range(epochs):
+        for epoch in range(self.epochs):
             train_loss, train_acc = train_epoch(self.model, self.optim, self.loader.train, self.criterion, epoch, self.device)
             val_loss, val_acc = eval_model(self.model, self.loader.valid, self.criterion, self.device) #TODO: Change valid
             test_loss, test_acc = eval_model(self.model, self.loader.test, self.criterion, self.device) #TODO: Change valid
@@ -37,9 +37,10 @@ class Train(BaseExp):
             metrics['val_loss'].append(val_loss)
             self.log_epoch(epoch, metrics)
             self.model.to(self.device)
+            self.sched.step()
 
         # # Testing
-        test_loss, test_acc= eval_model(self.model, self.loader.test, self.criterion, self.device) #TODO: Change valid logging.info("Test acc: {}, Test loss: {}".format(test_acc, test_loss))
+        test_loss, test_acc = eval_model(self.model, self.loader.test, self.criterion, self.device) #TODO: Change valid logging.info("Test acc: {}, Test loss: {}".format(test_acc, test_loss))
         logging.info("FINAL TEST | acc: {:.4f}, loss: {:.4f}, ".format(test_acc, test_loss))
         self.log_test(test_loss, test_acc)
         return metrics

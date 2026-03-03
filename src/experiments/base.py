@@ -3,6 +3,8 @@ import pandas as pd
 import hydra.core.hydra_config
 import mlflow
 import logging
+from codecarbon import EmissionsTracker
+from typing import Optional
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -13,8 +15,8 @@ class BaseExp(ABC):
         self.out_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
         self.log_filename = hydra.core.hydra_config.HydraConfig.get().job.name+'.log'
         self.overrides_config = self.out_dir/'.hydra/overrides.yaml'
-        self.model: torch.nn.Module
         self.exp_name: str
+        self.model_dir = Path("data/pretrained_models")
 
     def start_run(self, seed: int):
         mlflow.log_param('seed', seed)
@@ -46,15 +48,6 @@ class BaseExp(ABC):
             logging.info(f"MLFlow run ID: {finished_run.info.run_id}, "
                          f"status: {finished_run.info.status}")
 
-    def log_model(self) -> None:
-        # Log model
-        self.model.to('cpu')
-        # TODO: Rename model with mlflow id then easy to follow maybe?
-        torch.save(self.model, self.out_dir/'model.pt') # TODO: Add more checkpoints
-        torch.save(self.model.state_dict(), self.out_dir/'state_dict.pt') # TODO: Add more checkpoints
-        mlflow.log_artifact(str(self.out_dir/'model.pt'))
-        mlflow.log_artifact(str(self.out_dir/'state_dict.pt'))
-
     def log_metrics(self, metrics) -> None:
         # Log metrics
         df = pd.DataFrame.from_dict(metrics)
@@ -72,9 +65,10 @@ class BaseExp(ABC):
         })
 
     def run(self, cfg):
-        self.setup(cfg.mlflow, cfg.model, cfg.loader, cfg.optim, cfg.device)
+        self.setup(cfg.mlflow, cfg.model, cfg.loader, cfg.optim, cfg.sched, 
+                   cfg.epochs, cfg.device)
         self.start_run(cfg.seed)
-        self.log_exp(self.run_exp(cfg.epochs))
+        self.run_exp()
         self.end_run()
 
     def main(self, cfg) -> None:
@@ -87,21 +81,63 @@ class BaseExp(ABC):
     def get_config(self) -> dict:
         pass
 
-    def setup(self, mfwrapper: MLFlow, partial_model, loader, optim, device):
+    def setup(self, mfwrapper: MLFlow, partial_model, loader, optim, sched, epochs, device):
         # MLFlow setup
         mfwrapper.start()
         # Model and optim.setup
-        self.model = partial_model(in_features=loader.in_chan*loader.in_size[0]*loader.in_size[1], 
+        self.model = partial_model(in_channels=in_chan, in_features=loader.in_size[0]*loader.in_size[1], 
                                    out_features=loader.out_dim).to(device)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.optim = optim(self.model.parameters())
+        self.sched = sched(self.optim)
         self.loader = loader
         self.device = device
+        self.epochs = epochs
+
+    @abstractmethod
+    def run_exp(self, *args, **kwargs) -> Optional[dict]:
+        pass
+
+class BaseTrainExp(BaseExp):
+    def __init__(self):
+        super().__init__()
+        self.model: torch.nn.Module
+
+    def run(self, cfg):
+        with EmissionsTracker(output_dir=self.out_dir, log_level="error"):
+            self.setup(cfg.mlflow, cfg.model, cfg.loader, cfg.optim, cfg.sched, 
+                       cfg.epochs, cfg.device)
+            self.start_run(cfg.seed)
+            self.log_exp(self.run_exp())
+            self.end_run()
 
     @abstractmethod
     def log_exp(self, *args, **kwargs) -> None:
         pass
 
-    @abstractmethod
-    def run_exp(self, *args, **kwargs) -> dict:
-        pass
+    def log_model(self) -> None:
+        # Log model
+        d, l = self.model.depth, self.model.leaf_width
+        self.model.to('cpu')
+        # TODO: Rename model with mlflow id then easy to follow maybe?
+        torch.save(self.model, self.out_dir/"model.pt") # TODO: Add more checkpoints
+        torch.save(self.model.state_dict(), self.out_dir/"state_dict.pt") # TODO: Add more checkpoints
+        torch.save(self.model, self.model_dir/f"mnist_d{d}_l{l}_model.pt") # TODO: Add more checkpoints
+        torch.save(self.model.state_dict(), self.model_dir/f"mnist_d{d}_l{l}.pt") # TODO: Add more checkpoints
+        mlflow.log_artifact(str(self.out_dir/'model.pt'))
+        mlflow.log_artifact(str(self.out_dir/'state_dict.pt'))
+        mlflow.log_artifact(str(self.out_dir/'state_dict.pt'))
+
+    def setup(self, mfwrapper: MLFlow, partial_model, loader, optim, sched, epochs, device):
+        # MLFlow setup
+        mfwrapper.start()
+        # Model and optim.setup
+        self.model = partial_model(in_channels=loader.in_chan, 
+                                   in_features=loader.in_size[0]*loader.in_size[1], 
+                                   out_features=loader.out_dim).to(device)
+        self.criterion = torch.nn.CrossEntropyLoss()
+        self.optim = optim(self.model.parameters())
+        self.sched = sched(self.optim)
+        self.loader = loader
+        self.device = device
+        self.epochs = epochs
