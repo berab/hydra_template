@@ -117,15 +117,11 @@ class BaseTrainExp(BaseExp):
 
     def log_model(self) -> None:
         # Log model
-        d, l = self.model.depth, self.model.leaf_width
         self.model.to('cpu')
         # TODO: Rename model with mlflow id then easy to follow maybe?
         torch.save(self.model, self.out_dir/"model.pt") # TODO: Add more checkpoints
         torch.save(self.model.state_dict(), self.out_dir/"state_dict.pt") # TODO: Add more checkpoints
-        torch.save(self.model, self.model_dir/f"mnist_d{d}_l{l}_model.pt") # TODO: Add more checkpoints
-        torch.save(self.model.state_dict(), self.model_dir/f"mnist_d{d}_l{l}.pt") # TODO: Add more checkpoints
         mlflow.log_artifact(str(self.out_dir/'model.pt'))
-        mlflow.log_artifact(str(self.out_dir/'state_dict.pt'))
         mlflow.log_artifact(str(self.out_dir/'state_dict.pt'))
 
     def setup(self, mfwrapper: MLFlow, partial_model, loader, optim, sched, epochs, device):
