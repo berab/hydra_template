@@ -2,7 +2,6 @@ import os
 import logging
 import mlflow
 import mlflow.environment_variables
-import dagshub
 from main import ENV
 
 class MLFlow:
@@ -23,10 +22,7 @@ class MLFlow:
         # Set mlflow env. variables
         for (var, val) in zip(self.env.vars, self.env.vals):
             os.environ[var] = str(val)
-        if self.server == "local":
-            self.start_local()
-        else:
-            self.start_dagshub()
+        self.start_local()
 
     def start_local(self):
         mlflow.set_experiment(self.exp)
@@ -34,11 +30,3 @@ class MLFlow:
         run = mlflow.active_run()
         if run is not None:
             logging.info(f"MLFlow run ID: {run.info.run_id}, status: {run.info.status}")
-
-    def start_dagshub(self):
-        dagshub.init(self.proj_name, self.username)
-        mlflow.environment_variables.MLFLOW_TRACKING_PASSWORD = self.token
-        mlflow.set_experiment(self.exp)
-        mlflow.start_run()
-        run = mlflow.active_run()
-        logging.info(f"MLFlow run ID: {run.info.run_id}, status: {run.info.status}")

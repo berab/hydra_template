@@ -4,5 +4,5 @@ torchaudio
 hydra-core
 hydra-submitit-launcher
 mlflow
-dagshub
 tqdm
+codecarbon
